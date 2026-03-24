@@ -1,31 +1,48 @@
-export const Colors = {
-  bg: "#000000",
-  surface: "#0A0A0A",
-  surfaceRaised: "#111111",
-  overlay: "#161616",
+// Tommy — Personal Advisor Color System
+// Modern indigo-dark + violet accent
 
-  accent: "#F5C518",
-  accentSoft: "rgba(245, 197, 24, 0.12)",
-  accentBorder: "rgba(245, 197, 24, 0.2)",
-  accentGlow: "rgba(245, 197, 24, 0.06)",
+const palette = {
+  // Backgrounds — deep indigo-tinted dark
+  bg: "#09090E",
+  surface: "#11111A",
+  surfaceRaised: "#18182280",
+  overlay: "#1F1F2C",
 
-  positive: "#4ADE80",
-  positiveSoft: "rgba(74, 222, 128, 0.1)",
-  negative: "#F87171",
-  negativeSoft: "rgba(248, 113, 113, 0.1)",
-  warning: "#FB923C",
-  warningSoft: "rgba(251, 146, 60, 0.1)",
+  // Accent — soft violet (trust, calm, intelligence)
+  accent: "#7C6EFA",
+  accentLight: "#A393FB",
+  accentSoft: "rgba(124,110,250,0.12)",
+  accentBorder: "rgba(124,110,250,0.22)",
+  accentGlow: "rgba(124,110,250,0.07)",
 
-  text: "#FFFFFF",
-  textSub: "rgba(255,255,255,0.5)",
-  textMuted: "rgba(255,255,255,0.25)",
-  textFaint: "rgba(255,255,255,0.12)",
+  // Money — warm amber
+  money: "#F59E0B",
+  moneySoft: "rgba(245,158,11,0.12)",
+  moneyBorder: "rgba(245,158,11,0.2)",
 
+  // Semantics
+  positive: "#10B981",
+  positiveSoft: "rgba(16,185,129,0.12)",
+  negative: "#EF4444",
+  negativeSoft: "rgba(239,68,68,0.12)",
+  warning: "#F97316",
+  warningSoft: "rgba(249,115,22,0.12)",
+
+  // Text — warm white
+  text: "#F0F0F8",
+  textSub: "rgba(240,240,248,0.55)",
+  textMuted: "rgba(240,240,248,0.3)",
+  textFaint: "rgba(240,240,248,0.12)",
+
+  // Borders / Lines
   line: "rgba(255,255,255,0.06)",
   lineStrong: "rgba(255,255,255,0.1)",
+  lineMedium: "rgba(255,255,255,0.08)",
 
-  tabActive: "#F5C518",
-  tabInactive: "rgba(255,255,255,0.3)",
+  // Nav
+  tabActive: "#7C6EFA",
+  tabInactive: "rgba(240,240,248,0.32)",
 };
 
+export const Colors = palette;
 export default Colors;

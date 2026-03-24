@@ -13,14 +13,18 @@ function NativeTabLayout() {
     <NativeTabs>
       <NativeTabs.Trigger name="index">
         <Icon sf={{ default: "chart.line.uptrend.xyaxis", selected: "chart.line.uptrend.xyaxis" }} />
-        <Label>Dashboard</Label>
+        <Label>Início</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="voice">
-        <Icon sf={{ default: "waveform", selected: "waveform" }} />
-        <Label>Voz</Label>
+      <NativeTabs.Trigger name="advisor">
+        <Icon sf={{ default: "sparkles", selected: "sparkles" }} />
+        <Label>Tommy</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="agenda">
+        <Icon sf={{ default: "checklist", selected: "checklist" }} />
+        <Label>Agenda</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="history">
-        <Icon sf={{ default: "list.bullet", selected: "list.bullet" }} />
+        <Icon sf={{ default: "clock.arrow.circlepath", selected: "clock.arrow.circlepath" }} />
         <Label>Histórico</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
@@ -56,13 +60,12 @@ function ClassicTabLayout() {
           fontSize: 10,
           letterSpacing: 0.3,
         },
-        tabBarIconStyle: { marginTop: 2 },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Dashboard",
+          title: "Início",
           tabBarIcon: ({ color, size }) =>
             isIOS ? (
               <SymbolView name="chart.line.uptrend.xyaxis" tintColor={color} size={size - 2} />
@@ -72,14 +75,26 @@ function ClassicTabLayout() {
         }}
       />
       <Tabs.Screen
-        name="voice"
+        name="advisor"
         options={{
-          title: "Voz",
+          title: "Tommy",
           tabBarIcon: ({ color, size }) =>
             isIOS ? (
-              <SymbolView name="waveform" tintColor={color} size={size - 2} />
+              <SymbolView name="sparkles" tintColor={color} size={size - 2} />
             ) : (
-              <Feather name="mic" size={size - 2} color={color} />
+              <MaterialCommunityIcons name="creation" size={size - 2} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="agenda"
+        options={{
+          title: "Agenda",
+          tabBarIcon: ({ color, size }) =>
+            isIOS ? (
+              <SymbolView name="checklist" tintColor={color} size={size - 2} />
+            ) : (
+              <Feather name="check-square" size={size - 2} color={color} />
             ),
         }}
       />
@@ -89,9 +104,9 @@ function ClassicTabLayout() {
           title: "Histórico",
           tabBarIcon: ({ color, size }) =>
             isIOS ? (
-              <SymbolView name="list.bullet" tintColor={color} size={size - 2} />
+              <SymbolView name="clock.arrow.circlepath" tintColor={color} size={size - 2} />
             ) : (
-              <Feather name="list" size={size - 2} color={color} />
+              <Feather name="clock" size={size - 2} color={color} />
             ),
         }}
       />

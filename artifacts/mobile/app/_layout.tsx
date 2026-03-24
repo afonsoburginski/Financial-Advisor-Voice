@@ -14,13 +14,20 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setBaseUrl } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { FinanceProvider } from "@/context/FinanceContext";
 
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 
 SplashScreen.preventAutoHideAsync();
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      retry: 2,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function RootLayoutNav() {
   return (
@@ -50,10 +57,8 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#000" }}>
-            <FinanceProvider>
-              <RootLayoutNav />
-            </FinanceProvider>
+          <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#09090E" }}>
+            <RootLayoutNav />
           </GestureHandlerRootView>
         </QueryClientProvider>
       </ErrorBoundary>

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import {
   Animated,
   Platform,
@@ -9,167 +9,188 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons, Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import Colors from "@/constants/colors";
-import { useFinance } from "@/context/FinanceContext";
-import {
-  FINANCE,
-  calcularImpactoSandero,
-  formatCurrency,
-  isAbril,
-} from "@/constants/finance";
+import { useFinanceViewModel } from "@/viewmodels/useFinanceViewModel";
+import { useAgendaViewModel } from "@/viewmodels/useAgendaViewModel";
+import { FINANCE, formatCurrency, isAbril } from "@/constants/finance";
 
-function ThinProgress({ value }: { value: number }) {
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function ProgressLine({ value }: { value: number }) {
   const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(anim, {
-      toValue: Math.min(value, 1),
-      duration: 1400,
+    Animated.spring(anim, {
+      toValue: Math.min(Math.max(value, 0), 1),
       useNativeDriver: false,
+      tension: 40,
+      friction: 10,
     }).start();
   }, [value]);
-  const w = anim.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] });
+  const width = anim.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] });
   return (
-    <View style={styles.thinTrack}>
-      <Animated.View style={[styles.thinFill, { width: w }]} />
+    <View style={s.track}>
+      <Animated.View style={[s.fill, { width }]} />
     </View>
   );
 }
 
-function StatRow({
-  label,
-  value,
-  valueColor,
-  sublabel,
-}: {
-  label: string;
-  value: string;
-  valueColor?: string;
-  sublabel?: string;
-}) {
+function KpiCard({ label, value, color, note }: { label: string; value: string; color?: string; note?: string }) {
   return (
-    <View style={styles.statRow}>
-      <View>
-        <Text style={styles.statLabel}>{label}</Text>
-        {sublabel ? <Text style={styles.statSublabel}>{sublabel}</Text> : null}
+    <View style={s.kpiCard}>
+      <Text style={s.kpiLabel}>{label}</Text>
+      <Text style={[s.kpiValue, color ? { color } : null]}>{value}</Text>
+      {note ? <Text style={s.kpiNote}>{note}</Text> : null}
+    </View>
+  );
+}
+
+function SectionHeader({ title }: { title: string }) {
+  return <Text style={s.sectionHeader}>{title}</Text>;
+}
+
+function DataRow({ label, value, valueColor, sub }: { label: string; value: string; valueColor?: string; sub?: string }) {
+  return (
+    <View style={s.dataRow}>
+      <View style={{ flex: 1 }}>
+        <Text style={s.dataLabel}>{label}</Text>
+        {sub ? <Text style={s.dataSub}>{sub}</Text> : null}
       </View>
-      <Text style={[styles.statValue, valueColor ? { color: valueColor } : null]}>
-        {value}
-      </Text>
+      <Text style={[s.dataValue, valueColor ? { color: valueColor } : null]}>{value}</Text>
     </View>
   );
 }
 
-export default function DashboardScreen() {
-  const insets = useSafeAreaInsets();
-  const { decisoes, sobraMensal, isLoading, refetch } = useFinance();
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
-  const progressSandero = FINANCE.META_SANDERO.valor > 0
-    ? Math.min(sobraMensal / FINANCE.META_SANDERO.valor, 1)
-    : 0;
-  const mesesParaSandero = sobraMensal > 0
-    ? Math.ceil(FINANCE.META_SANDERO.valor / sobraMensal)
-    : 0;
-  const totalExtras = decisoes.reduce((a, d) => a + d.valor, 0);
+export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
+  const { sobraMensal, progressSandero, mesesParaSandero, decisoes, isLoading, refetch } =
+    useFinanceViewModel();
+  const { pending } = useAgendaViewModel();
   const webTop = Platform.OS === "web" ? 67 : 0;
+
+  const totalExtras = decisoes.reduce((s, d) => s + Number(d.valor), 0);
 
   return (
     <ScrollView
-      style={[styles.container, { paddingTop: insets.top + webTop }]}
-      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}
+      style={[s.container, { paddingTop: insets.top + webTop }]}
+      contentContainerStyle={[s.content, { paddingBottom: insets.bottom + 100 }]}
       showsVerticalScrollIndicator={false}
       refreshControl={
-        <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={Colors.accent} />
+        <RefreshControl
+          refreshing={isLoading}
+          onRefresh={refetch}
+          tintColor={Colors.accent}
+        />
       }
     >
-      {/* Top label */}
-      <View style={styles.topRow}>
-        <Text style={styles.topLabel}>FINANÇAS</Text>
-        <View style={styles.pcdChip}>
-          <Ionicons name="shield-checkmark-outline" size={11} color={Colors.accent} />
-          <Text style={styles.pcdChipText}>PCD • IOF + IPVA isentos</Text>
+      {/* Brand header */}
+      <View style={s.brandRow}>
+        <View>
+          <Text style={s.brandName}>Tommy</Text>
+          <Text style={s.brandSub}>seu advisor pessoal</Text>
+        </View>
+        <View style={s.pcdBadge}>
+          <Ionicons name="shield-checkmark-outline" size={12} color={Colors.accent} />
+          <Text style={s.pcdText}>PCD • IOF + IPVA isentos</Text>
         </View>
       </View>
 
-      {/* Hero number */}
-      <View style={styles.heroBlock}>
-        <Text style={styles.heroSub}>SOBRA MENSAL</Text>
-        <Text style={styles.heroValue}>{formatCurrency(sobraMensal)}</Text>
-        <Text style={styles.heroNote}>
-          Líquido {formatCurrency(FINANCE.SALARIO_LIQUIDO)} + VA {formatCurrency(FINANCE.VALE_ALIMENTACAO_MES)}
+      {/* Hero — Sobra mensal */}
+      <View style={s.heroCard}>
+        <Text style={s.heroLabel}>SOBRA MENSAL</Text>
+        <Text style={[s.heroValue, sobraMensal < 0 && { color: Colors.negative }]}>
+          {formatCurrency(sobraMensal)}
+        </Text>
+        <Text style={s.heroSub}>
+          Líquido {formatCurrency(FINANCE.SALARIO_LIQUIDO)} + VA{" "}
+          {formatCurrency(FINANCE.VALE_ALIMENTACAO_MES)}
         </Text>
       </View>
 
-      <View style={styles.divider} />
+      {/* KPI row */}
+      <View style={s.kpiRow}>
+        <KpiCard
+          label="Extras"
+          value={formatCurrency(totalExtras)}
+          color={totalExtras > 0 ? Colors.negative : Colors.textMuted}
+        />
+        <View style={s.kpiDivider} />
+        <KpiCard
+          label="Gastos fixos"
+          value={formatCurrency(FINANCE.TOTAL_CUSTOS_FIXOS)}
+          color={Colors.textSub}
+        />
+        <View style={s.kpiDivider} />
+        <KpiCard
+          label="Tarefas"
+          value={String(pending.length)}
+          color={pending.length > 0 ? Colors.accent : Colors.textMuted}
+          note="pendentes"
+        />
+      </View>
+
+      <View style={s.divider} />
 
       {/* Sandero goal */}
-      <View style={styles.goalBlock}>
-        <View style={styles.goalHeader}>
+      <View style={s.goalSection}>
+        <View style={s.goalTop}>
           <View>
-            <Text style={styles.goalTitle}>Sandero 2015 — à vista</Text>
-            <Text style={styles.goalSub}>
-              {mesesParaSandero > 0 ? `~${mesesParaSandero} meses guardando tudo` : "Meta atingida!"}
+            <Text style={s.goalTitle}>Sandero 2015 — à vista</Text>
+            <Text style={s.goalSub}>
+              {mesesParaSandero > 0
+                ? `~${mesesParaSandero} meses guardando a sobra`
+                : "Meta atingível!"}
             </Text>
           </View>
-          <Text style={styles.goalTarget}>{formatCurrency(FINANCE.META_SANDERO.valor)}</Text>
+          <Text style={s.goalAmount}>{formatCurrency(FINANCE.META_SANDERO.valor)}</Text>
         </View>
-        <ThinProgress value={progressSandero} />
-        <Text style={styles.goalPct}>{(progressSandero * 100).toFixed(1)}%</Text>
+        <ProgressLine value={progressSandero} />
+        <Text style={s.goalPct}>{(progressSandero * 100).toFixed(1)}% da meta</Text>
       </View>
 
-      <View style={styles.divider} />
+      <View style={s.divider} />
 
-      {/* Income */}
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>RENDA</Text>
-        <StatRow label="Salário bruto" value={formatCurrency(FINANCE.SALARIO_BRUTO)} />
-        <StatRow label="Salário líquido" value={formatCurrency(FINANCE.SALARIO_LIQUIDO)} valueColor={Colors.positive} sublabel="1 dependente" />
-        <StatRow label="Vale alimentação" value={formatCurrency(FINANCE.VALE_ALIMENTACAO_MES)} valueColor={Colors.accent} sublabel={`R$ ${FINANCE.VALE_ALIMENTACAO_DIA}/dia útil`} />
+      {/* Renda */}
+      <SectionHeader title="RENDA" />
+      <DataRow label="Salário bruto" value={formatCurrency(FINANCE.SALARIO_BRUTO)} />
+      <DataRow
+        label="Salário líquido"
+        value={formatCurrency(FINANCE.SALARIO_LIQUIDO)}
+        valueColor={Colors.positive}
+        sub="1 dependente"
+      />
+      <DataRow
+        label="Vale alimentação"
+        value={formatCurrency(FINANCE.VALE_ALIMENTACAO_MES)}
+        valueColor={Colors.money}
+        sub={`R$ ${FINANCE.VALE_ALIMENTACAO_DIA}/dia útil`}
+      />
+
+      <View style={s.divider} />
+
+      {/* Custos fixos */}
+      <SectionHeader title="CUSTOS FIXOS — SERRA/ES" />
+      <DataRow label="Aluguel / Condomínio" value={formatCurrency(FINANCE.CUSTOS_FIXOS.aluguel)} />
+      <DataRow label="Energia" value={formatCurrency(FINANCE.CUSTOS_FIXOS.energia)} />
+      <DataRow label="Celular" value={formatCurrency(FINANCE.CUSTOS_FIXOS.celular)} />
+      <DataRow label="Transcol" value={formatCurrency(FINANCE.CUSTOS_FIXOS.transporte)} />
+      <DataRow label="Lazer" value={formatCurrency(FINANCE.CUSTOS_FIXOS.lazer)} />
+      <View style={s.subtotalRow}>
+        <Text style={s.subtotalLabel}>Total fixo</Text>
+        <Text style={s.subtotalValue}>{formatCurrency(FINANCE.TOTAL_CUSTOS_FIXOS)}</Text>
       </View>
-
-      <View style={styles.divider} />
-
-      {/* Fixed costs */}
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>CUSTOS FIXOS — SERRA/ES</Text>
-        <StatRow label="Aluguel / Condomínio" value={formatCurrency(FINANCE.CUSTOS_FIXOS.aluguel)} />
-        <StatRow label="Energia" value={formatCurrency(FINANCE.CUSTOS_FIXOS.energia)} />
-        <StatRow label="Celular" value={formatCurrency(FINANCE.CUSTOS_FIXOS.celular)} />
-        <StatRow label="Transcol" value={formatCurrency(FINANCE.CUSTOS_FIXOS.transporte)} />
-        <StatRow label="Lazer" value={formatCurrency(FINANCE.CUSTOS_FIXOS.lazer)} />
-        <View style={styles.subtotalRow}>
-          <Text style={styles.subtotalLabel}>Subtotal fixo</Text>
-          <Text style={styles.subtotalValue}>{formatCurrency(FINANCE.TOTAL_CUSTOS_FIXOS)}</Text>
-        </View>
-      </View>
-
-      {totalExtras > 0 && (
-        <>
-          <View style={styles.divider} />
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>GASTOS EXTRAS</Text>
-            {decisoes.slice(0, 5).map((d) => (
-              <StatRow
-                key={d.id}
-                label={d.titulo}
-                value={`-${formatCurrency(d.valor)}`}
-                valueColor={Colors.negative}
-                sublabel={`${d.categoria} · +${calcularImpactoSandero(d.valor)}d no Sandero`}
-              />
-            ))}
-          </View>
-        </>
-      )}
 
       {isAbril() && (
         <>
-          <View style={styles.divider} />
-          <View style={styles.tipsBlock}>
-            <View style={styles.tipDot} />
+          <View style={s.divider} />
+          <View style={s.tipRow}>
+            <View style={[s.tipDot, { backgroundColor: Colors.money }]} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.tipTitle}>Sugestão para Abril</Text>
-              <Text style={styles.tipText}>
-                Pague R$ 1.750,00 em dívidas para limpar o nome e melhorar o score.
+              <Text style={[s.tipTitle, { color: Colors.money }]}>Sugestão — Abril</Text>
+              <Text style={s.tipText}>
+                Pague R$ 1.750,00 em dívidas para limpar o nome e melhorar seu score de crédito.
               </Text>
             </View>
           </View>
@@ -179,23 +200,22 @@ export default function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  content: { paddingHorizontal: 24, paddingTop: 16, gap: 0 },
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
-  topRow: {
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.bg },
+  content: { padding: 24, gap: 16 },
+
+  brandRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 32,
+    alignItems: "flex-start",
+    marginBottom: 8,
   },
-  topLabel: {
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.textMuted,
-    letterSpacing: 2,
-  },
-  pcdChip: {
+  brandName: { fontSize: 26, fontFamily: "Inter_700Bold", color: Colors.text, letterSpacing: -0.5 },
+  brandSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.textMuted, marginTop: 2 },
+
+  pcdBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
@@ -206,148 +226,96 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.accentBorder,
   },
-  pcdChipText: {
-    fontSize: 10,
-    fontFamily: "Inter_500Medium",
-    color: Colors.accent,
-  },
+  pcdText: { fontSize: 10, fontFamily: "Inter_500Medium", color: Colors.accent },
 
-  heroBlock: { marginBottom: 28 },
-  heroSub: {
+  heroCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    padding: 20,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: Colors.lineMedium,
+  },
+  heroLabel: {
     fontSize: 10,
     fontFamily: "Inter_600SemiBold",
     color: Colors.textMuted,
     letterSpacing: 2,
-    marginBottom: 8,
   },
   heroValue: {
-    fontSize: 48,
+    fontSize: 44,
     fontFamily: "Inter_700Bold",
-    color: Colors.accent,
-    letterSpacing: -2,
-    lineHeight: 52,
+    color: Colors.money,
+    letterSpacing: -1.5,
+    lineHeight: 50,
   },
-  heroNote: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textSub,
-    marginTop: 6,
-  },
+  heroSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.textSub },
 
-  divider: {
-    height: 1,
-    backgroundColor: Colors.line,
-    marginVertical: 24,
-  },
-
-  goalBlock: { marginBottom: 4 },
-  goalHeader: {
+  kpiRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 14,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.lineMedium,
+    paddingVertical: 14,
   },
-  goalTitle: {
-    fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.text,
-    marginBottom: 3,
-  },
-  goalSub: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textSub,
-  },
-  goalTarget: {
-    fontSize: 14,
-    fontFamily: "Inter_700Bold",
-    color: Colors.textSub,
-  },
-  thinTrack: {
-    height: 2,
-    backgroundColor: Colors.line,
-    borderRadius: 1,
-    overflow: "hidden",
-  },
-  thinFill: {
-    height: 2,
-    backgroundColor: Colors.accent,
-    borderRadius: 1,
-  },
-  goalPct: {
-    fontSize: 11,
+  kpiCard: { flex: 1, alignItems: "center", gap: 4 },
+  kpiDivider: { width: 1, backgroundColor: Colors.line },
+  kpiLabel: {
+    fontSize: 10,
     fontFamily: "Inter_500Medium",
-    color: Colors.accent,
-    marginTop: 7,
+    color: Colors.textMuted,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
+  kpiValue: { fontSize: 15, fontFamily: "Inter_700Bold", color: Colors.text },
+  kpiNote: { fontSize: 9, fontFamily: "Inter_400Regular", color: Colors.textMuted },
 
-  section: { gap: 18 },
-  sectionLabel: {
+  divider: { height: 1, backgroundColor: Colors.line },
+
+  goalSection: { gap: 10 },
+  goalTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  goalTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: Colors.text },
+  goalSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.textSub, marginTop: 3 },
+  goalAmount: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: Colors.textMuted },
+  track: { height: 3, backgroundColor: Colors.line, borderRadius: 2, overflow: "hidden" },
+  fill: { height: 3, backgroundColor: Colors.money, borderRadius: 2 },
+  goalPct: { fontSize: 11, fontFamily: "Inter_500Medium", color: Colors.money },
+
+  sectionHeader: {
     fontSize: 10,
     fontFamily: "Inter_600SemiBold",
     color: Colors.textMuted,
     letterSpacing: 2,
+    marginTop: 4,
     marginBottom: 4,
   },
-  statRow: {
+
+  dataRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.line,
   },
-  statLabel: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: Colors.text,
-  },
-  statSublabel: {
-    fontSize: 11,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  statValue: {
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
-    color: Colors.textSub,
-  },
+  dataLabel: { fontSize: 14, fontFamily: "Inter_400Regular", color: Colors.text },
+  dataSub: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.textMuted, marginTop: 2 },
+  dataValue: { fontSize: 14, fontFamily: "Inter_500Medium", color: Colors.textSub },
+
   subtotalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: Colors.line,
+    paddingTop: 12,
+    marginTop: 2,
   },
-  subtotalLabel: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    color: Colors.textSub,
-  },
-  subtotalValue: {
-    fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.negative,
-  },
+  subtotalLabel: { fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.textSub },
+  subtotalValue: { fontSize: 14, fontFamily: "Inter_700Bold", color: Colors.negative },
 
-  tipsBlock: {
-    flexDirection: "row",
-    gap: 14,
-    alignItems: "flex-start",
-    marginBottom: 4,
-  },
-  tipDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.warning,
-    marginTop: 5,
-  },
-  tipTitle: {
-    fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.warning,
-    marginBottom: 4,
-  },
+  tipRow: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
+  tipDot: { width: 6, height: 6, borderRadius: 3, marginTop: 4 },
+  tipTitle: { fontSize: 12, fontFamily: "Inter_600SemiBold", marginBottom: 4 },
   tipText: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "FinancePCD",
+    "name": "Tommy",
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -11,13 +11,13 @@
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#09090E"
     },
     "ios": {
       "supportsTablet": false
     },
     "android": {
-      "backgroundColor": "#000000"
+      "backgroundColor": "#09090E"
     },
     "web": {
       "favicon": "./assets/images/icon.png"
