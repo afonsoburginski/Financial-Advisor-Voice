@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
+import { TAB_BAR_HEIGHT } from "@/constants/layout";
 import { useFinanceViewModel } from "@/viewmodels/useFinanceViewModel";
 import type { Decisao } from "@/models/Decisao";
 import { DECISAO_CATEGORIAS } from "@/models/Decisao";
@@ -212,7 +213,7 @@ export default function HistoryScreen() {
       <FlatList
         data={decisoes}
         keyExtractor={(d) => String(d.id)}
-        contentContainerStyle={[s.listContent, { paddingBottom: insets.bottom + 100 }]}
+        contentContainerStyle={[s.listContent, { paddingBottom: insets.bottom + TAB_BAR_HEIGHT + 24 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={Colors.accent} />}
         ListEmptyComponent={
