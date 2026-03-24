@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export * from "./createDecisao";
-export * from "./decisao";
-export * from "./healthStatus";
+export interface CreateDecisao {
+  titulo: string;
+  valor: number;
+  categoria: string;
+}

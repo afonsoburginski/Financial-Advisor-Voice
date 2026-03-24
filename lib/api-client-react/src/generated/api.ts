@@ -5,18 +5,21 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type { CreateDecisao, Decisao, HealthStatus } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -99,3 +102,248 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List all financial decisions
+ */
+export const getListDecisoesUrl = () => {
+  return `/api/decisoes`;
+};
+
+export const listDecisoes = async (
+  options?: RequestInit,
+): Promise<Decisao[]> => {
+  return customFetch<Decisao[]>(getListDecisoesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListDecisoesQueryKey = () => {
+  return [`/api/decisoes`] as const;
+};
+
+export const getListDecisoesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listDecisoes>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listDecisoes>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListDecisoesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listDecisoes>>> = ({
+    signal,
+  }) => listDecisoes({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listDecisoes>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListDecisoesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listDecisoes>>
+>;
+export type ListDecisoesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all financial decisions
+ */
+
+export function useListDecisoes<
+  TData = Awaited<ReturnType<typeof listDecisoes>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listDecisoes>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListDecisoesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a financial decision
+ */
+export const getCreateDecisaoUrl = () => {
+  return `/api/decisoes`;
+};
+
+export const createDecisao = async (
+  createDecisao: CreateDecisao,
+  options?: RequestInit,
+): Promise<Decisao> => {
+  return customFetch<Decisao>(getCreateDecisaoUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createDecisao),
+  });
+};
+
+export const getCreateDecisaoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createDecisao>>,
+    TError,
+    { data: BodyType<CreateDecisao> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createDecisao>>,
+  TError,
+  { data: BodyType<CreateDecisao> },
+  TContext
+> => {
+  const mutationKey = ["createDecisao"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createDecisao>>,
+    { data: BodyType<CreateDecisao> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createDecisao(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateDecisaoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createDecisao>>
+>;
+export type CreateDecisaoMutationBody = BodyType<CreateDecisao>;
+export type CreateDecisaoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a financial decision
+ */
+export const useCreateDecisao = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createDecisao>>,
+    TError,
+    { data: BodyType<CreateDecisao> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createDecisao>>,
+  TError,
+  { data: BodyType<CreateDecisao> },
+  TContext
+> => {
+  return useMutation(getCreateDecisaoMutationOptions(options));
+};
+
+/**
+ * @summary Delete a financial decision
+ */
+export const getDeleteDecisaoUrl = (id: number) => {
+  return `/api/decisoes/${id}`;
+};
+
+export const deleteDecisao = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteDecisaoUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteDecisaoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteDecisao>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteDecisao>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteDecisao"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteDecisao>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteDecisao(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteDecisaoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteDecisao>>
+>;
+
+export type DeleteDecisaoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a financial decision
+ */
+export const useDeleteDecisao = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteDecisao>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteDecisao>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteDecisaoMutationOptions(options));
+};

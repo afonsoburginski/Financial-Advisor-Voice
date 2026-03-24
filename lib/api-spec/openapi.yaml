@@ -1,6 +1,5 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
   description: API specification
@@ -10,6 +9,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: decisoes
+    description: Financial decisions
 paths:
   /healthz:
     get:
@@ -24,6 +25,51 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /decisoes:
+    get:
+      operationId: listDecisoes
+      tags: [decisoes]
+      summary: List all financial decisions
+      responses:
+        "200":
+          description: List of decisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Decisao"
+    post:
+      operationId: createDecisao
+      tags: [decisoes]
+      summary: Create a financial decision
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDecisao"
+      responses:
+        "201":
+          description: Decision created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Decisao"
+  /decisoes/{id}:
+    delete:
+      operationId: deleteDecisao
+      tags: [decisoes]
+      summary: Delete a financial decision
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Decision deleted
 components:
   schemas:
     HealthStatus:
@@ -33,4 +79,36 @@ components:
           type: string
       required:
         - status
-
+    Decisao:
+      type: object
+      properties:
+        id:
+          type: integer
+        data:
+          type: string
+          format: date-time
+        titulo:
+          type: string
+        valor:
+          type: number
+        categoria:
+          type: string
+      required:
+        - id
+        - data
+        - titulo
+        - valor
+        - categoria
+    CreateDecisao:
+      type: object
+      properties:
+        titulo:
+          type: string
+        valor:
+          type: number
+        categoria:
+          type: string
+      required:
+        - titulo
+        - valor
+        - categoria

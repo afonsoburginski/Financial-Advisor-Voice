@@ -8,3 +8,17 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface Decisao {
+  id: number;
+  data: string;
+  titulo: string;
+  valor: number;
+  categoria: string;
+}
+
+export interface CreateDecisao {
+  titulo: string;
+  valor: number;
+  categoria: string;
+}

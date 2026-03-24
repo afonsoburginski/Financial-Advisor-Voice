@@ -14,3 +14,31 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary List all financial decisions
+ */
+export const ListDecisoesResponseItem = zod.object({
+  id: zod.number(),
+  data: zod.date(),
+  titulo: zod.string(),
+  valor: zod.number(),
+  categoria: zod.string(),
+});
+export const ListDecisoesResponse = zod.array(ListDecisoesResponseItem);
+
+/**
+ * @summary Create a financial decision
+ */
+export const CreateDecisaoBody = zod.object({
+  titulo: zod.string(),
+  valor: zod.number(),
+  categoria: zod.string(),
+});
+
+/**
+ * @summary Delete a financial decision
+ */
+export const DeleteDecisaoParams = zod.object({
+  id: zod.coerce.number(),
+});
