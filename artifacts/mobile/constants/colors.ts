@@ -1,32 +1,31 @@
 export const Colors = {
-  background: "#000000",
-  backgroundCard: "#0D0D0D",
-  backgroundElevated: "#141414",
-  backgroundInput: "#1A1A1A",
+  bg: "#000000",
+  surface: "#0A0A0A",
+  surfaceRaised: "#111111",
+  overlay: "#161616",
 
   accent: "#F5C518",
-  accentDim: "#C9A010",
-  accentMuted: "rgba(245, 197, 24, 0.15)",
-  accentBorder: "rgba(245, 197, 24, 0.3)",
+  accentSoft: "rgba(245, 197, 24, 0.12)",
+  accentBorder: "rgba(245, 197, 24, 0.2)",
+  accentGlow: "rgba(245, 197, 24, 0.06)",
 
-  positive: "#22C55E",
-  positiveDim: "rgba(34, 197, 94, 0.15)",
-  negative: "#EF4444",
-  negativeDim: "rgba(239, 68, 68, 0.15)",
-  warning: "#F97316",
-  warningDim: "rgba(249, 115, 22, 0.15)",
+  positive: "#4ADE80",
+  positiveSoft: "rgba(74, 222, 128, 0.1)",
+  negative: "#F87171",
+  negativeSoft: "rgba(248, 113, 113, 0.1)",
+  warning: "#FB923C",
+  warningSoft: "rgba(251, 146, 60, 0.1)",
 
-  white: "#FFFFFF",
   text: "#FFFFFF",
-  textMuted: "rgba(255, 255, 255, 0.55)",
-  textDim: "rgba(255, 255, 255, 0.35)",
+  textSub: "rgba(255,255,255,0.5)",
+  textMuted: "rgba(255,255,255,0.25)",
+  textFaint: "rgba(255,255,255,0.12)",
 
-  border: "rgba(255, 255, 255, 0.08)",
-  borderMedium: "rgba(255, 255, 255, 0.15)",
+  line: "rgba(255,255,255,0.06)",
+  lineStrong: "rgba(255,255,255,0.1)",
 
-  tabBar: "#0A0A0A",
   tabActive: "#F5C518",
-  tabInactive: "rgba(255, 255, 255, 0.4)",
+  tabInactive: "rgba(255,255,255,0.3)",
 };
 
 export default Colors;

@@ -13,79 +13,42 @@ import {
   ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useFinance, type Decisao } from "@/context/FinanceContext";
-import {
-  FINANCE,
-  calcularImpactoSandero,
-  formatCurrency,
-  formatDate,
-} from "@/constants/finance";
+import { FINANCE, calcularImpactoSandero, formatCurrency, formatDate } from "@/constants/finance";
 
 const CATEGORIAS = FINANCE.CATEGORIAS;
 
-function DecisaoItem({
-  item,
-  onDelete,
-}: {
-  item: Decisao;
-  onDelete: (id: number) => void;
-}) {
-  const diasAtraso = calcularImpactoSandero(item.valor);
-
+function Row({ item, onDelete }: { item: Decisao; onDelete: (id: number) => void }) {
+  const dias = calcularImpactoSandero(item.valor);
   return (
-    <View style={styles.decisaoCard}>
-      <View style={styles.decisaoLeft}>
-        <View style={styles.categoriaIcon}>
-          <MaterialCommunityIcons
-            name={getCategoryIcon(item.categoria)}
-            size={18}
-            color={Colors.accent}
-          />
-        </View>
-        <View style={styles.decisaoInfo}>
-          <Text style={styles.decisaoTitulo}>{item.titulo}</Text>
-          <Text style={styles.decisaoCategoria}>{item.categoria}</Text>
-          <Text style={styles.decisaoData}>{formatDate(item.data)}</Text>
-        </View>
+    <View style={styles.row}>
+      <View style={styles.rowLeft}>
+        <Text style={styles.rowTitle}>{item.titulo}</Text>
+        <Text style={styles.rowMeta}>
+          {item.categoria} · {formatDate(item.data)}
+        </Text>
       </View>
-      <View style={styles.decisaoRight}>
-        <Text style={styles.decisaoValor}>-{formatCurrency(item.valor)}</Text>
-        <Text style={styles.decisaoImpacto}>+{diasAtraso}d no Sandero</Text>
-        <Pressable
-          onPress={() => onDelete(item.id)}
-          style={({ pressed }) => [
-            styles.deleteBtn,
-            { opacity: pressed ? 0.6 : 1 },
-          ]}
-        >
-          <Feather name="trash-2" size={14} color={Colors.negative} />
-        </Pressable>
+      <View style={styles.rowRight}>
+        <Text style={styles.rowValue}>-{formatCurrency(item.valor)}</Text>
+        <Text style={styles.rowImpact}>+{dias}d</Text>
       </View>
+      <Pressable
+        onPress={() => onDelete(item.id)}
+        style={({ pressed }) => [styles.deleteBtn, { opacity: pressed ? 0.4 : 0.6 }]}
+        hitSlop={12}
+      >
+        <Feather name="x" size={14} color={Colors.textMuted} />
+      </Pressable>
     </View>
   );
 }
 
-function getCategoryIcon(cat: string): string {
-  const map: Record<string, string> = {
-    Alimentação: "food",
-    Saúde: "medical-bag",
-    Lazer: "movie-open",
-    Educação: "school",
-    Vestuário: "tshirt-crew",
-    Transporte: "car",
-    Tecnologia: "laptop",
-    Outros: "dots-horizontal",
-  };
-  return (map[cat] as any) ?? "dots-horizontal";
-}
-
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
-  const { decisoes, sobraMensal, isLoading, addDecisao, removeDecisao, refetch } =
-    useFinance();
+  const { decisoes, sobraMensal, isLoading, addDecisao, removeDecisao, refetch } = useFinance();
   const [showModal, setShowModal] = useState(false);
   const [titulo, setTitulo] = useState("");
   const [valor, setValor] = useState("");
@@ -94,17 +57,18 @@ export default function HistoryScreen() {
 
   const webTop = Platform.OS === "web" ? 67 : 0;
 
+  const totalExtras = decisoes.reduce((a, d) => a + d.valor, 0);
+  const totalDias = decisoes.reduce((a, d) => a + calcularImpactoSandero(d.valor), 0);
+
   const handleDelete = useCallback(
-    async (id: number) => {
-      Alert.alert("Remover gasto", "Deseja remover este registro?", [
+    (id: number) => {
+      Alert.alert("Remover", "Remover este registro?", [
         { text: "Cancelar", style: "cancel" },
         {
           text: "Remover",
           style: "destructive",
           onPress: async () => {
-            await Haptics.notificationAsync(
-              Haptics.NotificationFeedbackType.Warning
-            );
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             await removeDecisao(id);
           },
         },
@@ -117,7 +81,6 @@ export default function HistoryScreen() {
     if (!titulo.trim() || !valor) return;
     const v = parseFloat(valor.replace(",", "."));
     if (isNaN(v) || v <= 0) return;
-
     setIsSaving(true);
     try {
       await addDecisao(titulo.trim(), v, categoria);
@@ -131,202 +94,145 @@ export default function HistoryScreen() {
     }
   }, [titulo, valor, categoria, addDecisao]);
 
-  const totalGastos = decisoes.reduce((a, d) => a + d.valor, 0);
-  const totalDiasAtraso = decisoes.reduce(
-    (a, d) => a + calcularImpactoSandero(d.valor),
-    0
-  );
+  const previewVal = parseFloat(valor.replace(",", "."));
+  const previewDias = !isNaN(previewVal) && previewVal > 0 ? calcularImpactoSandero(previewVal) : null;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + webTop }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Histórico</Text>
+        <Text style={styles.headerLabel}>HISTÓRICO</Text>
         <Pressable
           onPress={() => setShowModal(true)}
-          style={({ pressed }) => [
-            styles.addBtn,
-            { opacity: pressed ? 0.8 : 1 },
-          ]}
+          style={({ pressed }) => [styles.addBtn, { opacity: pressed ? 0.7 : 1 }]}
         >
-          <Feather name="plus" size={20} color={Colors.background} />
+          <Feather name="plus" size={16} color={Colors.bg} />
         </Pressable>
       </View>
 
-      {/* Summary Row */}
-      <View style={styles.summaryRow}>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Total gastos extras</Text>
-          <Text style={[styles.summaryValue, { color: Colors.negative }]}>
-            -{formatCurrency(totalGastos)}
-          </Text>
+      {/* Summary strip */}
+      {decisoes.length > 0 && (
+        <View style={styles.summaryStrip}>
+          <View style={styles.sumItem}>
+            <Text style={styles.sumVal}>{formatCurrency(totalExtras)}</Text>
+            <Text style={styles.sumLabel}>extras</Text>
+          </View>
+          <View style={styles.sumDivider} />
+          <View style={styles.sumItem}>
+            <Text style={[styles.sumVal, { color: Colors.warning }]}>+{totalDias}d</Text>
+            <Text style={styles.sumLabel}>atraso Sandero</Text>
+          </View>
+          <View style={styles.sumDivider} />
+          <View style={styles.sumItem}>
+            <Text style={[styles.sumVal, { color: sobraMensal >= 0 ? Colors.positive : Colors.negative }]}>
+              {formatCurrency(sobraMensal)}
+            </Text>
+            <Text style={styles.sumLabel}>sobra ajustada</Text>
+          </View>
         </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Impacto no Sandero</Text>
-          <Text style={[styles.summaryValue, { color: Colors.warning }]}>
-            +{totalDiasAtraso}d
-          </Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Sobra atual</Text>
-          <Text
-            style={[
-              styles.summaryValue,
-              { color: sobraMensal >= 0 ? Colors.positive : Colors.negative },
-            ]}
-          >
-            {formatCurrency(sobraMensal)}
-          </Text>
-        </View>
-      </View>
+      )}
 
-      {/* List */}
       <FlatList
         data={decisoes}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(d) => d.id.toString()}
         contentContainerStyle={[
           styles.list,
-          {
-            paddingBottom:
-              insets.bottom + (Platform.OS === "web" ? 34 : 0) + 100,
-          },
+          { paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 0) + 100 },
         ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl
-            refreshing={isLoading}
-            onRefresh={refetch}
-            tintColor={Colors.accent}
-          />
+          <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={Colors.accent} />
         }
-        renderItem={({ item }) => (
-          <DecisaoItem item={item} onDelete={handleDelete} />
-        )}
+        ItemSeparatorComponent={() => <View style={styles.sep} />}
+        renderItem={({ item }) => <Row item={item} onDelete={handleDelete} />}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <MaterialCommunityIcons
-              name="receipt-text-outline"
-              size={52}
-              color={Colors.textDim}
-            />
+          <View style={styles.empty}>
+            <Feather name="inbox" size={28} color={Colors.textFaint} />
             <Text style={styles.emptyTitle}>Nenhum gasto extra</Text>
             <Text style={styles.emptyText}>
-              Toque no + para registrar um gasto extra e ver o impacto no seu
-              Sandero.
+              Toque + para registrar ou use a aba Voz.
             </Text>
           </View>
         }
       />
 
-      {/* Add Modal */}
-      <Modal
-        visible={showModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHandle} />
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Novo Gasto Extra</Text>
-              <Pressable
-                onPress={() => setShowModal(false)}
-                style={({ pressed }) => [
-                  styles.modalClose,
-                  { opacity: pressed ? 0.6 : 1 },
-                ]}
-              >
-                <Feather name="x" size={22} color={Colors.textMuted} />
+      {/* Add modal */}
+      <Modal visible={showModal} animationType="slide" transparent onRequestClose={() => setShowModal(false)}>
+        <View style={styles.overlay}>
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + 8 }]}>
+            <View style={styles.handle} />
+
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Novo gasto</Text>
+              <Pressable onPress={() => setShowModal(false)} hitSlop={10}>
+                <Feather name="x" size={20} color={Colors.textSub} />
               </Pressable>
             </View>
 
             <ScrollView
-              style={styles.modalScroll}
-              contentContainerStyle={{ gap: 16, paddingBottom: insets.bottom + 20 }}
+              style={styles.sheetScroll}
+              contentContainerStyle={{ gap: 20 }}
               showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
             >
-              {/* Title */}
-              <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Descrição</Text>
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>DESCRIÇÃO</Text>
                 <TextInput
-                  style={styles.textInput}
-                  placeholder="Ex: Cinema com amigos"
-                  placeholderTextColor={Colors.textDim}
+                  style={styles.input}
+                  placeholder="ex: Cinema com amigos"
+                  placeholderTextColor={Colors.textFaint}
                   value={titulo}
                   onChangeText={setTitulo}
+                  autoFocus
                 />
               </View>
 
-              {/* Valor */}
-              <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Valor (R$)</Text>
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>VALOR (R$)</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={styles.input}
                   placeholder="0,00"
-                  placeholderTextColor={Colors.textDim}
+                  placeholderTextColor={Colors.textFaint}
                   value={valor}
                   onChangeText={setValor}
                   keyboardType="decimal-pad"
                 />
-                {valor && !isNaN(parseFloat(valor.replace(",", "."))) && (
-                  <View style={styles.impactPreview}>
-                    <Ionicons
-                      name="car-outline"
-                      size={14}
-                      color={Colors.warning}
-                    />
+                {previewDias !== null && (
+                  <View style={styles.impactRow}>
+                    <Feather name="clock" size={11} color={Colors.warning} />
                     <Text style={styles.impactText}>
-                      Isso atrasa seu Sandero em{" "}
-                      {calcularImpactoSandero(
-                        parseFloat(valor.replace(",", "."))
-                      )}{" "}
-                      dias
+                      Atrasa o Sandero em {previewDias} dias
                     </Text>
                   </View>
                 )}
               </View>
 
-              {/* Categoria */}
-              <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Categoria</Text>
-                <View style={styles.categorias}>
-                  {CATEGORIAS.map((cat) => (
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>CATEGORIA</Text>
+                <View style={styles.chips}>
+                  {CATEGORIAS.map((c) => (
                     <Pressable
-                      key={cat}
-                      onPress={() => setCategoria(cat)}
-                      style={[
-                        styles.catChip,
-                        categoria === cat && styles.catChipActive,
-                      ]}
+                      key={c}
+                      onPress={() => setCategoria(c)}
+                      style={[styles.chip, categoria === c && styles.chipActive]}
                     >
-                      <Text
-                        style={[
-                          styles.catChipText,
-                          categoria === cat && styles.catChipTextActive,
-                        ]}
-                      >
-                        {cat}
-                      </Text>
+                      <Text style={[styles.chipText, categoria === c && styles.chipTextActive]}>{c}</Text>
                     </Pressable>
                   ))}
                 </View>
               </View>
 
-              {/* Save Button */}
               <Pressable
                 onPress={handleSave}
                 disabled={!titulo.trim() || !valor || isSaving}
                 style={({ pressed }) => [
                   styles.saveBtn,
-                  (!titulo.trim() || !valor) && styles.saveBtnDisabled,
-                  { opacity: pressed ? 0.8 : 1 },
+                  (!titulo.trim() || !valor) && { opacity: 0.35 },
+                  pressed && { opacity: 0.7 },
                 ]}
               >
                 <Text style={styles.saveBtnText}>
-                  {isSaving ? "Salvando..." : "Registrar Gasto"}
+                  {isSaving ? "Salvando..." : "Registrar"}
                 </Text>
               </Pressable>
             </ScrollView>
@@ -338,262 +244,133 @@ export default function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
+  container: { flex: 1, backgroundColor: Colors.bg },
+
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-    color: Colors.white,
+  headerLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.textMuted,
+    letterSpacing: 2,
   },
   addBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: Colors.accent,
     alignItems: "center",
     justifyContent: "center",
   },
-  summaryRow: {
+
+  summaryStrip: {
     flexDirection: "row",
-    backgroundColor: Colors.backgroundCard,
+    borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderColor: Colors.line,
     paddingVertical: 14,
+    marginBottom: 8,
   },
-  summaryItem: {
-    flex: 1,
-    alignItems: "center",
-    gap: 3,
-  },
-  summaryDivider: {
-    width: 1,
-    backgroundColor: Colors.border,
-  },
-  summaryLabel: {
-    fontSize: 10,
-    fontFamily: "Inter_500Medium",
-    color: Colors.textMuted,
-    textTransform: "uppercase",
-    textAlign: "center",
-    letterSpacing: 0.4,
-  },
-  summaryValue: {
-    fontSize: 15,
-    fontFamily: "Inter_700Bold",
-    textAlign: "center",
-  },
-  list: {
-    padding: 16,
-    gap: 10,
-  },
-  decisaoCard: {
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: 14,
-    padding: 14,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  decisaoLeft: {
+  sumItem: { flex: 1, alignItems: "center", gap: 3 },
+  sumDivider: { width: 1, backgroundColor: Colors.line },
+  sumVal: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: Colors.negative },
+  sumLabel: { fontSize: 10, fontFamily: "Inter_400Regular", color: Colors.textMuted, letterSpacing: 0.5 },
+
+  list: { paddingHorizontal: 24, paddingTop: 8 },
+  sep: { height: 1, backgroundColor: Colors.line, marginVertical: 0 },
+
+  row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    flex: 1,
-  },
-  categoriaIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: Colors.accentMuted,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  decisaoInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  decisaoTitulo: {
-    fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.white,
-  },
-  decisaoCategoria: {
-    fontSize: 11,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textMuted,
-  },
-  decisaoData: {
-    fontSize: 10,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textDim,
-  },
-  decisaoRight: {
-    alignItems: "flex-end",
-    gap: 3,
-  },
-  decisaoValor: {
-    fontSize: 15,
-    fontFamily: "Inter_700Bold",
-    color: Colors.negative,
-  },
-  decisaoImpacto: {
-    fontSize: 10,
-    fontFamily: "Inter_500Medium",
-    color: Colors.textMuted,
-  },
-  deleteBtn: {
-    marginTop: 4,
-    padding: 4,
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 80,
+    paddingVertical: 16,
     gap: 12,
   },
-  emptyTitle: {
-    fontSize: 18,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.textMuted,
+  rowLeft: { flex: 1 },
+  rowTitle: { fontSize: 14, fontFamily: "Inter_500Medium", color: Colors.text },
+  rowMeta: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.textMuted, marginTop: 3 },
+  rowRight: { alignItems: "flex-end", gap: 2 },
+  rowValue: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: Colors.negative },
+  rowImpact: { fontSize: 10, fontFamily: "Inter_400Regular", color: Colors.textMuted },
+  deleteBtn: { padding: 4 },
+
+  empty: { flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 80, gap: 10 },
+  emptyTitle: { fontSize: 15, fontFamily: "Inter_500Medium", color: Colors.textSub },
+  emptyText: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.textMuted, textAlign: "center" },
+
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" },
+  sheet: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: "80%",
+    borderTopWidth: 1,
+    borderColor: Colors.lineStrong,
   },
-  emptyText: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textDim,
-    textAlign: "center",
-    paddingHorizontal: 40,
-    lineHeight: 20,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.75)",
-    justifyContent: "flex-end",
-  },
-  modalContainer: {
-    backgroundColor: Colors.backgroundElevated,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: "85%",
-  },
-  modalHandle: {
-    width: 36,
-    height: 4,
+  handle: {
+    width: 32,
+    height: 3,
     borderRadius: 2,
-    backgroundColor: Colors.border,
+    backgroundColor: Colors.lineStrong,
     alignSelf: "center",
-    marginTop: 12,
-    marginBottom: 4,
+    marginTop: 10,
+    marginBottom: 2,
   },
-  modalHeader: {
+  sheetHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: Colors.line,
   },
-  modalTitle: {
-    fontSize: 18,
-    fontFamily: "Inter_700Bold",
-    color: Colors.white,
-  },
-  modalClose: {
-    padding: 4,
-  },
-  modalScroll: {
-    padding: 20,
-  },
-  fieldGroup: {
-    gap: 8,
-  },
-  fieldLabel: {
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.textMuted,
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-  },
-  textInput: {
-    backgroundColor: Colors.backgroundInput,
-    borderRadius: 12,
+  sheetTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: Colors.text },
+  sheetScroll: { padding: 20 },
+
+  field: { gap: 10 },
+  fieldLabel: { fontSize: 10, fontFamily: "Inter_600SemiBold", color: Colors.textMuted, letterSpacing: 2 },
+  input: {
+    backgroundColor: Colors.overlay,
+    borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 13,
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: "Inter_400Regular",
-    color: Colors.white,
+    color: Colors.text,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.lineStrong,
   },
-  impactPreview: {
+  impactRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    backgroundColor: Colors.warningDim,
-    borderRadius: 8,
-    paddingHorizontal: 10,
+    gap: 5,
+    marginTop: 2,
+  },
+  impactText: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.warning },
+
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  chip: {
+    paddingHorizontal: 12,
     paddingVertical: 7,
+    borderRadius: 100,
     borderWidth: 1,
-    borderColor: Colors.warning + "33",
+    borderColor: Colors.lineStrong,
+    backgroundColor: Colors.overlay,
   },
-  impactText: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    color: Colors.warning,
-  },
-  categorias: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  catChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: Colors.backgroundInput,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  catChipActive: {
-    backgroundColor: Colors.accentMuted,
-    borderColor: Colors.accent,
-  },
-  catChipText: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    color: Colors.textMuted,
-  },
-  catChipTextActive: {
-    color: Colors.accent,
-    fontFamily: "Inter_600SemiBold",
-  },
+  chipActive: { borderColor: Colors.accent, backgroundColor: Colors.accentSoft },
+  chipText: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.textSub },
+  chipTextActive: { color: Colors.accent, fontFamily: "Inter_500Medium" },
+
   saveBtn: {
     backgroundColor: Colors.accent,
-    borderRadius: 14,
-    paddingVertical: 16,
+    borderRadius: 10,
+    paddingVertical: 15,
     alignItems: "center",
-    marginTop: 4,
   },
-  saveBtnDisabled: {
-    opacity: 0.4,
-  },
-  saveBtnText: {
-    fontSize: 16,
-    fontFamily: "Inter_700Bold",
-    color: Colors.background,
-  },
+  saveBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: Colors.bg },
 });
