@@ -1,0 +1,3 @@
+[install]
+# Garante hoisting previsível para Metro resolver o pacote workspace `api`.
+linkWorkspacePackages = true
